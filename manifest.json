@@ -1,0 +1,8 @@
+{
+    "name": "默认模板库",
+    "version": "1.0.0",
+    "description": "默认模板库",
+    "templates": [
+        "./templates/default"
+    ]
+}
