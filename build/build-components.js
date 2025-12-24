@@ -88,14 +88,12 @@ componentFiles.forEach((componentName) => {
   }
 });
 
-
 const manifestJsonPath = path.join(componentsDir, 'manifest.json');
 if (fs.existsSync(manifestJsonPath)) {
-      const rootManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
-rootManifest.templates= componentFiles.map(component => `./templates/${component}`), // List template paths
+  const rootManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
+  rootManifest.templates = componentFiles.map(component => `./templates/${component}`), // List template paths
 
-fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
-
-    }
+  fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
+}
 
 console.log('\n🎉 All components built successfully!');

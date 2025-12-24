@@ -50,6 +50,9 @@ export async function loadTemplateSource(info: TemplateManifest): Promise<Templa
 
 export function parseVueComp(source: string) {
   const exports = { } as Record<string, ComponentOptions>;
+  // eslint-disable-next-line ts/ban-ts-comment
+  // @ts-expect-error
+  // eslint-disable-next-line unused-imports/no-unused-vars
   const Vue = vue;
   // eslint-disable-next-line no-eval
   eval(source);

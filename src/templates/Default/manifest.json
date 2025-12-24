@@ -1,13 +1,13 @@
 {
-    "name": "白色边框",
-    "version": "1.0.0",
-    "description": "默认模板，白色边框 + 底部信息",
-    "entry": "index.js",
-    "css": "index.css",
-    "files": [
-        "index.js",
-        "index.css"
-    ],
-    "author": "kohai",
-    "license": "MIT"
+  "name": "白色边框",
+  "version": "1.0.0",
+  "description": "默认模板，白色边框 + 底部信息",
+  "entry": "index.js",
+  "css": "index.css",
+  "files": [
+    "index.js",
+    "index.css"
+  ],
+  "author": "kohai",
+  "license": "MIT"
 }
