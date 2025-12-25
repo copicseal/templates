@@ -1,5 +1,6 @@
 import type { ComponentOptions } from 'vue';
-import * as vue from 'vue';
+import * as Vue from 'vue';
+import { createSandbox } from './sandbox';
 
 export class TemplateParser {
   private baseUrl!: string;
@@ -49,13 +50,7 @@ export async function loadTemplateSource(info: TemplateManifest): Promise<Templa
 }
 
 export function parseVueComp(source: string) {
-  const exports = { } as Record<string, ComponentOptions>;
-  // eslint-disable-next-line ts/ban-ts-comment
-  // @ts-expect-error
-  // eslint-disable-next-line unused-imports/no-unused-vars
-  const Vue = vue;
-  // eslint-disable-next-line no-eval
-  eval(source);
+  const exports = createSandbox<ComponentOptions>({ Vue }).run(source).exports;
   return Object.values(exports)[0]!;
 }
 

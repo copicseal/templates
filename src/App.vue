@@ -46,7 +46,7 @@
 import type { Settings } from './types';
 import { computed, ref } from 'vue';
 import CoRender from './preview/co-render.vue';
-import { TemplateParser } from './utils/fetch-remote';
+import { TemplateParser } from './utils/template';
 
 // 导入所有模板组件
 const templateMap = import.meta.glob<any>('./templates/**/*.vue', { eager: true, import: 'default' });
