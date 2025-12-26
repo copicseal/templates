@@ -1,6 +1,11 @@
+/* eslint-disable node/prefer-global/process */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { config } from 'dotenv';
+
+// 加载.env文件
+config();
 
 // Directory containing Vue components
 const componentsDir = path.resolve(process.cwd(), 'src/templates');
@@ -22,7 +27,7 @@ const componentFiles = fs.readdirSync(componentsDir)
 console.log(`Found ${componentFiles.length} components: ${componentFiles.join(', ')}`);
 
 // Build each component
-componentFiles.forEach((componentName) => {
+componentFiles.forEach(async (componentName) => {
   console.log(`\nBuilding component: ${componentName}`);
 
   try {
@@ -55,22 +60,14 @@ componentFiles.forEach((componentName) => {
       const endIndex = content.lastIndexOf(endStr);
 
       if (startIndex !== -1 && endIndex !== -1) {
-        // Extract the function parameter name (e, Vue, etc.)
-        const paramStart = startIndex + startStr.length;
-        const paramEnd = content.indexOf(')', paramStart);
-        const paramName = content.substring(paramStart, paramEnd);
-
-        // Extract the entire function content
-        const functionContent = content.substring(startIndex, endIndex + endStr.length);
-
         // Replace IIFE wrapper with exports format
         // Extract the entire IIFE content and rebuild it with exports
         const iifeContent = content.substring(startIndex, endIndex + endStr.length);
 
         // Replace var xxx = (function(e) {...})(Vue); with exports.xxx = (function(e) {...})(Vue);
-        const newContent = iifeContent.replace(`var ${componentName}=`, `exports.${componentName} =`);
-
-        fs.writeFileSync(indexFile, newContent, 'utf8');
+        const newContent = iifeContent.replace(`var ${componentName}=`, `exports.${componentName}=`);
+        const signedContent = await codeSign(newContent);
+        fs.writeFileSync(indexFile, signedContent, 'utf8');
         console.log(`✓ Successfully processed ${componentName} index.js`);
       }
       else {
@@ -91,9 +88,27 @@ componentFiles.forEach((componentName) => {
 const manifestJsonPath = path.join(componentsDir, 'manifest.json');
 if (fs.existsSync(manifestJsonPath)) {
   const rootManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
-  rootManifest.templates = componentFiles.map(component => `./templates/${component}`), // List template paths
+  rootManifest.templates = componentFiles.map(component => `./templates/${component}`); // List template paths
 
   fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
 }
 
 console.log('\n🎉 All components built successfully!');
+
+async function codeSign(code) {
+  const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code,
+      password: process.env.SIGN_PASSWORD,
+    }),
+  });
+
+  const { signature } = await res.json();
+
+  return `${code}
+
+/* @signature:alg=ed25519;value=${signature} */
+`;
+}

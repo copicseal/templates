@@ -32,6 +32,10 @@ export async function loadTemplateInfo(url: string) {
     groupInfo.templates.map(async (path) => {
       const data = await fetchJSON<TemplateManifest>(joinUrl(url, `${path}/`, 'manifest.json'));
       data.url = `${joinUrl(url, path)}/`;
+      const source = await fetchText(joinUrl(data.url, data.entry));
+      const valid = await verifyCodeSignature(source);
+      data.valid = valid;
+
       return data;
     }),
   );
@@ -52,6 +56,39 @@ export async function loadTemplateSource(info: TemplateManifest): Promise<Templa
 export function parseVueComp(source: string) {
   const exports = createSandbox<ComponentOptions>({ Vue }).run(source).exports;
   return Object.values(exports)[0]!;
+}
+
+export async function verifyCodeSignature(source: string) {
+  const { content, signature } = extractCode(source) || {};
+  if (!content || !signature)
+    return false;
+
+  const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/verify', {
+    method: 'POST',
+    body: JSON.stringify({
+      code: content,
+      signature,
+    }),
+  }).then(res => res.json() as Promise<{ valid: boolean }>).catch(() => ({ valid: false }));
+
+  return !!res.valid;
+}
+
+function extractCode(code: string) {
+  // eslint-disable-next-line regexp/no-super-linear-backtracking
+  const match = code.match(/\/\*\s*@signature:[\s\S]*?value=([\w+/=]+)[\s\S]*?\*\//);
+
+  if (!match)
+    return null;
+
+  const signature = match[1];
+
+  const content = code
+    .replace(/\/\*\s*@signature[\s\S]*?\*\//, '')
+    .replace(/\/\/# sourceMappingURL=[\s\S]*$/, '')
+    .trim();
+
+  return { content, signature };
 }
 
 async function fetchJSON<T = any>(url: string) {
@@ -94,6 +131,7 @@ export type TemplateManifest = {
   files: string[]
   author?: string
   license?: string
+  valid?: boolean
 };
 
 export type TemplateSource = {
