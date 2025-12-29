@@ -63,7 +63,7 @@ async function loadData() {
   const parser = new TemplateParser(url);
   const info = await parser.getInfo();
   console.log(info);
-  console.log(await parser.getTemplateSource(info.children![0]!));
+  console.log(await parser.getTemplateSource(info.groups![0]!.templates[0]!));
 }
 loadData();
 

@@ -4,96 +4,187 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from 'dotenv';
 
-// 加载.env文件
 config();
 
-// Directory containing Vue components
-const componentsDir = path.resolve(process.cwd(), 'src/templates');
+async function run() {
+  const componentsDir = path.resolve(process.cwd(), 'src/templates');
+  const distDir = path.resolve(process.cwd(), 'dist');
 
-// Dist directory
-const distDir = path.resolve(process.cwd(), 'dist');
+  initDist(distDir);
 
-// Clean dist directory first
-if (fs.existsSync(distDir)) {
-  console.log('Cleaning dist directory...');
-  fs.rmSync(distDir, { recursive: true, force: true });
+  const templates = scanTemplates(componentsDir);
+
+  const groups = buildGroups(templates);
+
+  console.log(`Found ${templates.length} templates in ${groups.length} groups`);
+
+  for (const template of templates) {
+    await buildTemplate(template, componentsDir, distDir);
+  }
+
+  generateManifest(distDir, componentsDir, templates);
+
+  console.log('\n🎉 All components built successfully!');
 }
-fs.mkdirSync(distDir, { recursive: true });
 
-// Get all component directories
-const componentFiles = fs.readdirSync(componentsDir)
-  .filter(item => fs.lstatSync(path.join(componentsDir, item)).isDirectory());
+function initDist(distDir) {
+  if (fs.existsSync(distDir)) {
+    console.log('Cleaning dist directory...');
+    fs.rmSync(distDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(distDir, { recursive: true });
+}
 
-console.log(`Found ${componentFiles.length} components: ${componentFiles.join(', ')}`);
+function scanTemplates(dir, baseDir = dir) {
+  const items = fs.readdirSync(dir);
+  const templates = [];
 
-// Build each component
-componentFiles.forEach(async (componentName) => {
-  console.log(`\nBuilding component: ${componentName}`);
+  for (const item of items) {
+    const fullPath = path.join(dir, item);
+    const relativePath = path.relative(baseDir, fullPath);
 
-  try {
-    // Set COMPONENT_NAME environment variable and run build
-    const env = { ...process.env, COMPONENT_NAME: componentName };
-    execSync('pnpm build', { env, stdio: 'inherit' });
-
-    const componentTemplateDir = path.join(distDir, 'templates', componentName);
-    fs.mkdirSync(componentTemplateDir, { recursive: true });
-
-    // Copy component's JSON file as manifest.json
-    const componentJsonPath = path.join(componentsDir, componentName, `manifest.json`);
-    if (fs.existsSync(componentJsonPath)) {
-      const componentJson = JSON.parse(fs.readFileSync(componentJsonPath, 'utf8'));
-      fs.writeFileSync(path.join(componentTemplateDir, 'manifest.json'), JSON.stringify(componentJson, null, 2));
-      console.log(`✓ Copied and updated ${componentName} manifest.json`);
-    }
-
-    // Post-process the generated index.js file to match expected format
-    const indexFile = path.join(componentTemplateDir, 'index.js');
-    if (fs.existsSync(indexFile)) {
-      const content = fs.readFileSync(indexFile, 'utf8');
-
-      // Convert var xxx = (function(e) {...})(Vue); to exports.xxx = function(Vue) {...}(Vue);
-      // Use string manipulation for better reliability with minified code
-      const startStr = `var ${componentName}=(function(`;
-      const endStr = `})(Vue);`;
-
-      const startIndex = content.indexOf(startStr);
-      const endIndex = content.lastIndexOf(endStr);
-
-      if (startIndex !== -1 && endIndex !== -1) {
-        // Replace IIFE wrapper with exports format
-        // Extract the entire IIFE content and rebuild it with exports
-        const iifeContent = content.substring(startIndex, endIndex + endStr.length);
-
-        // Replace var xxx = (function(e) {...})(Vue); with exports.xxx = (function(e) {...})(Vue);
-        const newContent = iifeContent.replace(`var ${componentName}=`, `exports.${componentName}=`);
-        const signedContent = await codeSign(newContent);
-        fs.writeFileSync(indexFile, signedContent, 'utf8');
-        console.log(`✓ Successfully processed ${componentName} index.js`);
+    if (fs.lstatSync(fullPath).isDirectory()) {
+      const manifestPath = path.join(fullPath, 'manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const parts = relativePath.split(path.sep);
+        const groupId = parts.length >= 2 ? parts[0] : 'default';
+        templates.push({
+          name: item,
+          path: fullPath,
+          relativePath,
+          groupId,
+          manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
+        });
       }
       else {
-        console.warn(`✗ Could not process ${componentName} index.js - pattern not found`);
-        console.log('File content:');
-        console.log(content);
+        templates.push(...scanTemplates(fullPath, baseDir));
       }
     }
+  }
 
-    console.log(`✓ Successfully built ${componentName}`);
+  return templates;
+}
+
+function buildGroups(templates) {
+  const groups = [];
+  const templateMap = new Map();
+
+  templates.forEach((template) => {
+    const groupId = template.manifest.groupId || 'default';
+    if (!templateMap.has(groupId)) {
+      templateMap.set(groupId, []);
+      groups.push({
+        id: groupId,
+        name: template.manifest.groupName || groupId,
+        templates: [],
+      });
+    }
+    templateMap.get(groupId).push({
+      name: template.name,
+      url: `./templates/${template.relativePath}`,
+    });
+  });
+
+  groups.forEach((group) => {
+    group.templates = templateMap.get(group.id);
+  });
+
+  return groups;
+}
+
+async function buildTemplate(template, componentsDir, distDir) {
+  console.log(`\nBuilding template: ${template.name}`);
+
+  try {
+    buildComponent(template);
+
+    const templateDistDir = path.join(distDir, 'templates', template.relativePath);
+    fs.mkdirSync(templateDistDir, { recursive: true });
+
+    copyManifest(template, templateDistDir);
+    await processIndexFile(template, templateDistDir);
+
+    console.log(`✓ Successfully built ${template.name}`);
   }
   catch (error) {
-    console.error(`✗ Failed to build ${componentName}:`, error.message);
+    console.error(`✗ Failed to build ${template.name}:`, error.message);
     process.exit(1);
   }
-});
+}
 
-const manifestJsonPath = path.join(componentsDir, 'manifest.json');
-if (fs.existsSync(manifestJsonPath)) {
+function buildComponent(template) {
+  const env = {
+    ...process.env,
+    COMPONENT_NAME: template.name,
+    COMPONENT_PATH: template.relativePath,
+  };
+  execSync('pnpm build', { env, stdio: 'inherit' });
+}
+
+function copyManifest(template, templateDistDir) {
+  const manifestPath = path.join(templateDistDir, 'manifest.json');
+  fs.writeFileSync(manifestPath, JSON.stringify(template.manifest, null, 2));
+  console.log(`✓ Copied ${template.name} manifest.json`);
+}
+
+async function processIndexFile(template, templateDistDir) {
+  const indexFile = path.join(templateDistDir, 'index.js');
+  if (!fs.existsSync(indexFile))
+    return;
+
+  const content = fs.readFileSync(indexFile, 'utf8');
+  const processedContent = transformExports(content, template.name);
+
+  if (processedContent) {
+    const signedContent = await codeSign(processedContent);
+    fs.writeFileSync(indexFile, signedContent, 'utf8');
+    console.log(`✓ Successfully processed ${template.name} index.js`);
+  }
+  else {
+    console.warn(`✗ Could not process ${template.name} index.js - pattern not found`);
+  }
+}
+
+function transformExports(content, componentName) {
+  const startStr = `var ${componentName}=(function(`;
+  const endStr = `})(Vue);`;
+
+  const startIndex = content.indexOf(startStr);
+  const endIndex = content.lastIndexOf(endStr);
+
+  if (startIndex === -1 || endIndex === -1)
+    return null;
+
+  const iifeContent = content.substring(startIndex, endIndex + endStr.length);
+  return iifeContent.replace(`var ${componentName}=`, `exports.${componentName}=`);
+}
+
+function generateManifest(distDir, componentsDir, templates) {
+  const manifestJsonPath = path.join(componentsDir, 'manifest.json');
+  if (!fs.existsSync(manifestJsonPath))
+    return;
+
   const rootManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
-  rootManifest.templates = componentFiles.map(component => `./templates/${component}`); // List template paths
+
+  const templatesByGroup = new Map();
+  templates.forEach((template) => {
+    const groupId = template.groupId || 'default';
+    if (!templatesByGroup.has(groupId))
+      templatesByGroup.set(groupId, []);
+    templatesByGroup.get(groupId).push({
+      name: template.name,
+      url: `./templates/${template.relativePath.replace(/\\/g, '/')}`,
+    });
+  });
+
+  if (rootManifest.groups && Array.isArray(rootManifest.groups)) {
+    rootManifest.groups.forEach((group) => {
+      group.templates = templatesByGroup.get(group.id) || [];
+    });
+  }
 
   fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
 }
-
-console.log('\n🎉 All components built successfully!');
 
 async function codeSign(code) {
   const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/sign', {
@@ -112,3 +203,5 @@ async function codeSign(code) {
 /* @signature:alg=ed25519;value=${signature} */
 `;
 }
+
+run();

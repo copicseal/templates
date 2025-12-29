@@ -28,17 +28,28 @@ export class TemplateParser {
 export async function loadTemplateInfo(url: string) {
   const groupInfo = await fetchJSON<TemplateGroupManifest>(joinUrl(url, 'manifest.json'));
   groupInfo.url = url;
-  groupInfo.children = await Promise.all(
-    groupInfo.templates.map(async (path) => {
-      const data = await fetchJSON<TemplateManifest>(joinUrl(url, `${path}/`, 'manifest.json'));
-      data.url = `${joinUrl(url, path)}/`;
-      const source = await fetchText(joinUrl(data.url, data.entry));
-      const valid = await verifyCodeSignature(source);
-      data.valid = valid;
+  groupInfo.groups = await Promise.all(
+    groupInfo.groups?.map(async (group) => {
+      if (group.templates && Array.isArray(group.templates)) {
+        const templateInfos = await Promise.all(
+          group.templates.map(async (template) => {
+            const templatePath = template.url;
+            const curl = `${joinUrl(url, templatePath)}/`;
+            const data = await fetchJSON<TemplateManifest>(joinUrl(curl, 'manifest.json'));
+            data.url = curl;
+            const source = await fetchText(joinUrl(data.url, data.entry));
+            const valid = await verifyCodeSignature(source);
+            data.valid = valid;
+            return data;
+          }),
+        );
 
-      return data;
-    }),
+        group.templates = templateInfos;
+      }
+      return group;
+    }) ?? [],
   );
+
   return groupInfo;
 }
 
@@ -117,11 +128,23 @@ export type TemplateGroupManifest = {
   name: string
   version: string
   description?: string
-  templates: string []
-  children?: TemplateManifest []
+  groups?: TemplateGroup[]
+};
+
+export type TemplateGroup = {
+  id: string
+  name: string
+  description?: string
+  templates: TemplateManifest[]
+};
+
+export type TemplateInfo = {
+  name: string
+  path: string
 };
 
 export type TemplateManifest = {
+  id: string
   url: string
   name: string
   version: string

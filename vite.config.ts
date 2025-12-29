@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
@@ -6,9 +7,8 @@ import { defineConfig } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Get component name from environment variable or default to HelloWorld
-// eslint-disable-next-line node/prefer-global/process
 const componentName = process.env.COMPONENT_NAME || 'HelloWorld';
+const componentPath = process.env.COMPONENT_PATH || componentName;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, `./src/templates/${componentName}/index.vue`),
+      entry: resolve(__dirname, `./src/templates/${componentPath}/index.vue`),
       formats: ['iife'],
       name: componentName,
       fileName(_format) {
@@ -46,6 +46,6 @@ export default defineConfig({
       },
     },
     emptyOutDir: false, // Don't empty dist on each build
-    outDir: `dist/templates/${componentName}`,
+    outDir: `dist/templates/${componentPath}`,
   },
 });

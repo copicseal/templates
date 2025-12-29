@@ -1,6 +1,20 @@
 {
+  "id": "default",
   "name": "默认模板库",
   "version": "1.0.0",
   "description": "默认模板库",
-  "templates": []
+  "groups": [
+    {
+      "id": "group1",
+      "name": "模板分组1",
+      "description": "基础模板集合",
+      "templates": []
+    },
+    {
+      "id": "group2",
+      "name": "模板分组2",
+      "description": "问候类模板集合",
+      "templates": []
+    }
+  ]
 }
