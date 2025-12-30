@@ -21,7 +21,7 @@ async function run() {
     console.log('\n📦 Creating ZIP archive...');
     await createZipFromDist(buildResult.distDir, libraryId);
 
-    const zipPath = path.join(buildResult.distDir, `${libraryId}-templates.zip`);
+    const zipPath = path.join(buildResult.distDir, `${libraryId}.tpl.zip`);
     const stats = fs.statSync(zipPath);
     const fileSizeInBytes = stats.size;
     const fileSizeInKB = (fileSizeInBytes / 1024).toFixed(2);
@@ -63,7 +63,7 @@ async function createZipFromDist(distDir, libraryId = 'templates') {
     throw new Error(`Dist directory not found: ${distDir}`);
   }
 
-  const zipPath = path.join(distDir, `${libraryId}-templates.zip`);
+  const zipPath = path.join(distDir, `${libraryId}.tpl.zip`);
   const zip = new JSZip();
 
   // Recursively add all files from dist directory to ZIP
