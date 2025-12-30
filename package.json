@@ -8,6 +8,7 @@
     "lint": "eslint --fix",
     "build": "vue-tsc -b && vite build",
     "build:all": "node ./build/build-components.js",
+    "build:zip": "node ./build/build-zip.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
     "eslint-plugin-format": "^1.1.0",
+    "jszip": "^3.10.1",
     "sass": "^1.97.1",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",

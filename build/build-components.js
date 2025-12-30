@@ -6,7 +6,7 @@ import { config } from 'dotenv';
 
 config();
 
-async function run() {
+export async function run() {
   const componentsDir = path.resolve(process.cwd(), 'src/templates');
   const distDir = path.resolve(process.cwd(), 'dist');
 
@@ -25,6 +25,8 @@ async function run() {
   generateManifest(distDir, componentsDir, templates);
 
   console.log('\n🎉 All components built successfully!');
+
+  return { distDir, templates, groups };
 }
 
 function initDist(distDir) {
