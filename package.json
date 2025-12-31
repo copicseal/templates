@@ -9,6 +9,7 @@
     "build": "vue-tsc -b && vite build",
     "build:all": "node ./build/build-components.js",
     "build:zip": "node ./build/build-zip.js",
+    "create-template": "node ./build/create-template.js",
     "preview": "vite preview"
   },
   "dependencies": {
