@@ -9,12 +9,6 @@
       "name": "模板分组1",
       "description": "基础模板集合",
       "templates": []
-    },
-    {
-      "id": "group2",
-      "name": "模板分组2",
-      "description": "基础模板集合",
-      "templates": []
     }
   ]
 }
