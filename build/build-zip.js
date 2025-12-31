@@ -3,22 +3,29 @@ import fs from 'node:fs';
 import path from 'node:path';
 import JSZip from 'jszip';
 import { run as buildComponents } from './build-components.js';
+import { logger } from './logger.js';
 
 async function run() {
+  logger.title('ZIP 打包构建器', '构建模板并打包为 ZIP 文件');
+
   let buildResult = null;
 
   try {
     // Step 1: Run the build-components process directly
-    console.log('🚀 Starting build process...');
+    const spinner = logger.spinner('正在运行构建进程...');
+    spinner.start();
     buildResult = await buildComponents();
+    spinner.succeed('构建进程完成');
 
     // Step 2: Read manifest to get library id
     const manifestPath = path.join(buildResult.distDir, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const libraryId = manifest.id || 'templates';
 
+    logger.info('读取清单文件', `库ID: ${libraryId}`);
+
     // Step 3: Create ZIP archive from dist directory
-    console.log('\n📦 Creating ZIP archive...');
+    logger.section('创建 ZIP 压缩包');
     await createZipFromDist(buildResult.distDir, libraryId);
 
     const zipPath = path.join(buildResult.distDir, `${libraryId}.tpl.zip`);
@@ -38,16 +45,21 @@ async function run() {
       sizeDisplay = `${fileSizeInMB} MB`;
     }
 
-    console.log(`\n✅ Build completed successfully!`);
-    console.log(`📁 ZIP file: ${zipPath}`);
-    console.log(`📊 Size: ${sizeDisplay} (${fileSizeInBytes} bytes)`);
+    logger.success('ZIP 构建完成', `文件大小: ${sizeDisplay}`);
+    logger.stats('构建结果', {
+      'ZIP 文件路径': path.basename(zipPath),
+      '文件大小': sizeDisplay,
+      '原始字节数': fileSizeInBytes.toLocaleString(),
+      '库ID': libraryId,
+    });
   }
   catch (error) {
-    console.error('❌ Build failed:', error.message);
+    logger.error('构建失败', error.message);
 
     // Clean up on failure
     const distDir = buildResult?.distDir;
     if (distDir && fs.existsSync(distDir)) {
+      logger.info('清理失败构建', '正在删除临时文件');
       fs.rmSync(distDir, { recursive: true, force: true });
     }
 
@@ -102,7 +114,7 @@ async function createZipFromDist(distDir, libraryId = 'templates') {
   // Write ZIP file to dist directory
   fs.writeFileSync(zipPath, zipContent);
 
-  console.log(`📁 Created ZIP archive: ${zipPath}`);
+  logger.success('ZIP 压缩包已创建', path.basename(zipPath));
 }
 
 run();

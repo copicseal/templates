@@ -3,10 +3,13 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from 'dotenv';
+import { logger } from './logger.js';
 
 config();
 
 export async function run() {
+  logger.title('模板组件构建器', '开始构建所有模板组件');
+
   const componentsDir = path.resolve(process.cwd(), 'src/templates');
   const distDir = path.resolve(process.cwd(), 'dist');
 
@@ -16,7 +19,7 @@ export async function run() {
 
   const groups = buildGroups(templates);
 
-  console.log(`Found ${templates.length} templates in ${groups.length} groups`);
+  logger.info(`扫描完成`, `发现 ${templates.length} 个模板，分为 ${groups.length} 个分组`);
 
   for (const template of templates) {
     await buildTemplate(template, componentsDir, distDir);
@@ -24,20 +27,33 @@ export async function run() {
 
   generateManifest(distDir, componentsDir, templates);
 
-  console.log('\n🎉 All components built successfully!');
+  logger.success('所有组件构建完成', `共构建 ${templates.length} 个模板`);
+  logger.timing('构建总耗时');
+
+  logger.stats('构建统计', {
+    模板总数: templates.length,
+    分组数量: groups.length,
+    输出目录: path.basename(distDir),
+  });
 
   return { distDir, templates, groups };
 }
 
 function initDist(distDir) {
+  logger.section('初始化输出目录');
+
   if (fs.existsSync(distDir)) {
-    console.log('Cleaning dist directory...');
+    logger.info('清理输出目录', '正在删除现有内容');
     fs.rmSync(distDir, { recursive: true, force: true });
   }
+
   fs.mkdirSync(distDir, { recursive: true });
+  logger.success('输出目录已准备', path.basename(distDir));
 }
 
 function scanTemplates(dir, baseDir = dir) {
+  logger.info('扫描模板目录', path.basename(dir));
+
   const items = fs.readdirSync(dir);
   const templates = [];
 
@@ -57,6 +73,7 @@ function scanTemplates(dir, baseDir = dir) {
           groupId,
           manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
         });
+        logger.info('发现模板', `${item} (分组: ${groupId})`);
       }
       else {
         templates.push(...scanTemplates(fullPath, baseDir));
@@ -95,7 +112,8 @@ function buildGroups(templates) {
 }
 
 async function buildTemplate(template, componentsDir, distDir) {
-  console.log(`\nBuilding template: ${template.name}`);
+  const spinner = logger.spinner(`正在构建模板: ${template.name}`);
+  spinner.start();
 
   try {
     buildComponent(template);
@@ -106,10 +124,11 @@ async function buildTemplate(template, componentsDir, distDir) {
     copyManifest(template, templateDistDir);
     await processIndexFile(template, templateDistDir);
 
-    console.log(`✓ Successfully built ${template.name}`);
+    spinner.succeed(`模板构建完成: ${template.name}`);
   }
   catch (error) {
-    console.error(`✗ Failed to build ${template.name}:`, error.message);
+    spinner.fail(`模板构建失败: ${template.name}`);
+    logger.error('构建错误', error.message);
     process.exit(1);
   }
 }
@@ -126,7 +145,7 @@ function buildComponent(template) {
 function copyManifest(template, templateDistDir) {
   const manifestPath = path.join(templateDistDir, 'manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(template.manifest, null, 2));
-  console.log(`✓ Copied ${template.name} manifest.json`);
+  logger.success('清单文件已复制', `${template.name}/manifest.json`);
 }
 
 async function processIndexFile(template, templateDistDir) {
@@ -140,10 +159,10 @@ async function processIndexFile(template, templateDistDir) {
   if (processedContent) {
     const signedContent = await codeSign(processedContent);
     fs.writeFileSync(indexFile, signedContent, 'utf8');
-    console.log(`✓ Successfully processed ${template.name} index.js`);
+    logger.success('代码处理完成', `${template.name}/index.js`);
   }
   else {
-    console.warn(`✗ Could not process ${template.name} index.js - pattern not found`);
+    logger.warning('代码处理跳过', `${template.name}/index.js - 未找到匹配模式`);
   }
 }
 
@@ -162,9 +181,13 @@ function transformExports(content, componentName) {
 }
 
 function generateManifest(distDir, componentsDir, templates) {
+  logger.section('生成清单文件');
+
   const manifestJsonPath = path.join(componentsDir, 'manifest.json');
-  if (!fs.existsSync(manifestJsonPath))
+  if (!fs.existsSync(manifestJsonPath)) {
+    logger.warning('清单文件未找到', path.basename(manifestJsonPath));
     return;
+  }
 
   const rootManifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'));
 
@@ -186,6 +209,7 @@ function generateManifest(distDir, componentsDir, templates) {
   }
 
   fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
+  logger.success('清单文件已生成', path.join(path.basename(distDir), 'manifest.json'));
 }
 
 async function codeSign(code) {
