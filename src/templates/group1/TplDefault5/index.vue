@@ -212,6 +212,10 @@ const datetimeStyle = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@function size($multiplier) {
+  @return calc(var(--base-size, 1rem) * $multiplier);
+}
+
 .tpl-card {
   --font-scale: 1;
   --gap-scale: 1;
@@ -223,7 +227,7 @@ const datetimeStyle = computed(() => {
   &.is-logo-shadow {
     .detail-info .make-logo {
       > img {
-        filter: drop-shadow(0 0 0.02rem var(--text-color)) drop-shadow(0 0 0.02rem var(--text-color));
+        filter: drop-shadow(0 0 size(0.02) var(--text-color)) drop-shadow(0 0 size(0.02) var(--text-color));
       }
     }
   }
@@ -240,16 +244,16 @@ const datetimeStyle = computed(() => {
 
       .part2 {
         position: relative;
-        margin-left: calc(var(--calc-gap-scale) * 0.08rem);
-        padding-left: calc(var(--calc-gap-scale) * 0.08rem);
+        margin-left: calc(var(--calc-gap-scale) * size(0.08));
+        padding-left: calc(var(--calc-gap-scale) * size(0.08));
 
         &::before {
           content: '';
           position: absolute;
           left: 0;
-          top: calc(var(--font-scale) * 0.05rem);
-          bottom: calc(var(--font-scale) * 0.05rem);
-          width: calc(var(--font-scale) * 0.005rem);
+          top: calc(var(--font-scale) * size(0.05));
+          bottom: calc(var(--font-scale) * size(0.05));
+          width: calc(var(--font-scale) * size(0.005));
           background-color: var(--text-color);
         }
       }
@@ -266,7 +270,7 @@ const datetimeStyle = computed(() => {
 
   .main-image {
     /* width: 100%; */
-    width: 1rem;
+    width: size(100);
     height: auto;
   }
 
@@ -295,29 +299,29 @@ const datetimeStyle = computed(() => {
 
       > img,
       :deep(svg) {
-        height: 100rem;
-        max-height: calc(var(--font-scale) * 0.2rem);
-        max-width: calc(var(--font-scale) * 0.6rem);
+        height: size(100);
+        max-height: calc(var(--font-scale) * size(0.2));
+        max-width: calc(var(--font-scale) * size(0.6));
       }
     }
 
     .model-name {
       display: flex;
       align-items: flex-end;
-      margin-top: calc(var(--calc-gap-scale) * 0.01rem);
-      font-size: calc(var(--font-scale) * 0.1rem);
+      margin-top: calc(var(--calc-gap-scale) * size(0.01));
+      font-size: calc(var(--font-scale) * size(0.1));
     }
 
     .basie-info {
       display: flex;
       align-items: flex-end;
-      gap: 0.5em;
-      margin-top: calc(var(--calc-gap-scale) * 0.01rem);
-      font-size: calc(var(--font-scale) * 0.1rem);
+      gap: size(0.05);
+      margin-top: calc(var(--calc-gap-scale) * size(0.01));
+      font-size: calc(var(--font-scale) * size(0.1));
     }
     .date-time {
-      margin-top: calc(var(--calc-gap-scale) * 0.02rem);
-      font-size: calc(var(--font-scale) * 0.08rem);
+      margin-top: calc(var(--calc-gap-scale) * size(0.02));
+      font-size: calc(var(--font-scale) * size(0.08));
       text-align: center;
       color: color-mix(in srgb, var(--text-color) 50%, transparent);
     }

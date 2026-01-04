@@ -12,7 +12,7 @@
       :style="{
         display: 'block',
         margin: '0 auto',
-        borderRadius: `${radius}rem`,
+        borderRadius: `calc(var(--base-size) * ${radius})`,
       }"
       :src="imgUrl"
     >
@@ -122,7 +122,7 @@ const props = defineProps({
   },
   shadow: {
     type: String,
-    default: '0 0 0.2rem 0 rgba(0, 0, 0, 0.8)',
+    default: '0 0 calc(var(--base-size) * 0.2) 0 rgba(0, 0, 0, 0.8)',
     __co: {
       label: '阴影',
       type: 'shadow',
@@ -152,8 +152,12 @@ const isHorizontal = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@function size($multiplier) {
+  @return calc(var(--base-size, 1rem) * $multiplier);
+}
+
 .tpl-card {
-  --box-shadow: 0 0 0.2rem rgba(0, 0, 0, 0.8);
+  --box-shadow: 0 0 size(0.2) rgba(0, 0, 0, 0.8);
   --font-scale: 1;
   --text-color: #000;
   color: var(--text-color);
@@ -161,7 +165,7 @@ const isHorizontal = computed(() => {
   &.is-logo-shadow {
     .make-model .make-logo {
       > img {
-        filter: drop-shadow(0 0 0.02rem var(--text-color)) drop-shadow(0 0 0.02rem var(--text-color));
+        filter: drop-shadow(0 0 size(0.02) var(--text-color)) drop-shadow(0 0 size(0.02) var(--text-color));
       }
     }
   }
@@ -171,9 +175,9 @@ const isHorizontal = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2em;
-  padding-top: 0.2rem;
-  font-size: calc(var(--font-scale) * 0.2rem);
+  gap: size(0.04);
+  padding-top: size(0.2);
+  font-size: calc(var(--font-scale) * size(0.2));
 
   .make-model {
     display: flex;
@@ -194,17 +198,17 @@ const isHorizontal = computed(() => {
 
       > img,
       :deep(svg) {
-        height: 100rem;
-        max-height: calc(var(--font-scale) * 0.2rem);
-        max-width: calc(var(--font-scale) * 0.6rem);
+        height: size(100);
+        max-height: calc(var(--font-scale) * size(0.2));
+        max-width: calc(var(--font-scale) * size(0.6));
       }
     }
 
     .model-name {
       display: flex;
       align-items: flex-end;
-      margin-left: 0.05rem;
-      font-size: calc(var(--font-scale) * 0.1rem);
+      margin-left: size(0.05);
+      font-size: calc(var(--font-scale) * size(0.1));
     }
   }
 
@@ -212,12 +216,12 @@ const isHorizontal = computed(() => {
     .basie-info {
       display: flex;
       align-items: flex-end;
-      gap: 0.5em;
-      font-size: calc(var(--font-scale) * 0.1rem);
+      gap: size(0.05);
+      font-size: calc(var(--font-scale) * size(0.1));
     }
     .date-time {
-      margin-top: calc(var(--font-scale) * 0.02rem);
-      font-size: calc(var(--font-scale) * 0.08rem);
+      margin-top: calc(var(--font-scale) * size(0.02));
+      font-size: calc(var(--font-scale) * size(0.08));
       text-align: center;
       color: color-mix(in srgb, var(--text-color) 50%, transparent);
     }
@@ -230,13 +234,13 @@ const isHorizontal = computed(() => {
   .card-info {
     flex-direction: column;
     height: unset;
-    padding: 0.02rem;
+    padding: size(0.02);
 
     .make-model {
       flex: 1;
       flex-direction: column;
       justify-content: center;
-      gap: 0.1rem;
+      gap: size(0.1);
     }
     .details-info {
       .basie-info {
@@ -244,16 +248,16 @@ const isHorizontal = computed(() => {
         flex-direction: column;
         gap: 1em;
         margin-left: 0;
-        font-size: calc(var(--font-scale) * 0.1rem);
+        font-size: calc(var(--font-scale) * size(0.1));
       }
     }
   }
 }
 
 .main-image {
-  width: 1rem;
+  width: size(0.6);
   height: auto;
-  border-radius: 0.05rem;
+  border-radius: size(0.05);
   box-shadow: var(--box-shadow);
 }
 </style>

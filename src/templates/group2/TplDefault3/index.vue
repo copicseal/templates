@@ -182,12 +182,15 @@ function generateNoise(density = 0.2) {
 </script>
 
 <style lang="scss" scoped>
+@function size($multiplier) {
+  @return calc(var(--base-size, 1rem) * 4 / 9.36 * $multiplier);
+}
+
 .tpl-card {
-  --base-size: calc(4rem / 9.36);
   display: flex;
-  height: calc(var(--base-size) * 10);
-  padding: calc(var(--base-size) * 0.32);
-  border-radius: calc(var(--base-size) * 0.4);
+  height: size(10);
+  padding: size(0.32);
+  border-radius: size(0.4);
   background-color: #fff;
 }
 
@@ -195,28 +198,28 @@ function generateNoise(density = 0.2) {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: calc(var(--base-size) * 5.76);
-  padding: calc(var(--base-size) * 0.32);
-  font-size: calc(var(--base-size) * 0.28);
+  width: size(5.76);
+  padding: size(0.32);
+  font-size: size(0.28);
   color: #8f8c8e;
 
   .header {
     display: flex;
     align-items: center;
-    margin-bottom: calc(var(--base-size) * 0.4);
-    font-size: calc(var(--base-size) * 0.4);
+    margin-bottom: size(0.4);
+    font-size: size(0.4);
     font-weight: bold;
 
     .logo {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: calc(var(--base-size) * 1.1);
-      height: calc(var(--base-size) * 1.1);
-      font-size: calc(var(--base-size) * 0.5);
+      width: size(1.1);
+      height: size(1.1);
+      font-size: size(0.5);
       color: #4b96f7;
       background-color: #071125;
-      border-radius: calc(var(--base-size) * 0.2);
+      border-radius: size(0.2);
       overflow: hidden;
 
       .svg-logo {
@@ -233,12 +236,12 @@ function generateNoise(density = 0.2) {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        filter: drop-shadow(0 0 0.02rem #4b96f7) drop-shadow(0 0 0.02rem #4b96f7);
+        filter: drop-shadow(0 0 size(0.05) #4b96f7) drop-shadow(0 0 size(0.05) #4b96f7);
       }
     }
 
     .make-model {
-      margin-left: calc(var(--base-size) * 0.2);
+      margin-left: size(0.2);
       color: #000;
     }
   }
@@ -246,15 +249,15 @@ function generateNoise(density = 0.2) {
   .lens-info {
     display: flex;
     align-items: center;
-    margin-top: calc(var(--base-size) * 0.3);
+    margin-top: size(0.3);
 
     .lens-logo {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: calc(var(--base-size) * 0.5);
-      height: calc(var(--base-size) * 0.5);
-      border-radius: calc(var(--base-size) * 0.1);
+      width: size(0.5);
+      height: size(0.5);
+      border-radius: size(0.1);
       background:
         radial-gradient(at 20% 30%, #ff4d4d, transparent 60%), radial-gradient(at 80% 20%, #ffa500, transparent 60%),
         radial-gradient(at 50% 70%, #00ffcc, transparent 60%), radial-gradient(at 30% 80%, #8f00ff, transparent 60%),
@@ -265,9 +268,9 @@ function generateNoise(density = 0.2) {
     }
 
     .lens-name {
-      margin-left: calc(var(--base-size) * 0.2);
+      margin-left: size(0.2);
       color: #000;
-      font-size: calc(var(--base-size) * 0.32);
+      font-size: size(0.32);
       font-weight: bold;
     }
   }
@@ -278,7 +281,7 @@ function generateNoise(density = 0.2) {
 
   .website,
   .details {
-    margin-top: calc(var(--base-size) * 0.4);
+    margin-top: size(0.4);
   }
 
   .details {
@@ -288,30 +291,30 @@ function generateNoise(density = 0.2) {
   }
 
   .loading-text {
-    margin-top: calc(var(--base-size) * 0.7);
+    margin-top: size(0.7);
   }
 }
 
 .main-image {
-  margin-left: calc(var(--base-size) * 0.32);
+  margin-left: size(0.32);
   /* width: 100%; */
-  border-radius: calc(var(--base-size) * 0.2);
-  width: 1rem;
+  border-radius: size(0.2);
+  width: var(--base-size, 1rem);
   height: auto;
   object-fit: cover;
 }
 
 .is-crop-pic {
   .main-image {
-    width: calc(var(--base-size) * 8.28) !important;
+    width: size(8.28) !important;
   }
 }
 
 .is-acrylic {
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(calc(var(--base-size) * 0.5)) saturate(180%);
-  border: calc(var(--base-size) * 0.02) solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 calc(var(--base-size) * 0.08) calc(var(--base-size) * 0.6) rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(size(0.5)) saturate(180%);
+  border: size(0.02) solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 size(0.08) size(0.6) rgba(0, 0, 0, 0.1);
   overflow: hidden;
 
   .card-info {

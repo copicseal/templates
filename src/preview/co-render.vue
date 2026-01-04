@@ -42,7 +42,7 @@ export default defineComponent({
       return {
         position: 'relative',
         zIndex: 0,
-        padding: mode === 'none' ? 0 : (padding ?? []).map((i: number) => `${i}rem`).join(' '),
+        padding: mode === 'none' ? 0 : (padding ?? []).map((i: number) => `calc(${i} * var(--base-size))`).join(' '),
         overflow: 'hidden',
         ...style,
       };
@@ -61,7 +61,7 @@ export default defineComponent({
       return {
         zIndex: -1,
         position: 'absolute',
-        inset: `-${blur}rem`,
+        inset: `calc(-${blur} * var(--base-size))`,
         background: mode === 'image' ? `url(${props.imgUrl})` : color?.rgba,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -114,6 +114,7 @@ export default defineComponent({
       }
     }
 
+    const baseSize = ref(400);
     async function calcSize(
       _wrapper: HTMLDivElement,
       containerEl: HTMLDivElement,
@@ -123,8 +124,9 @@ export default defineComponent({
       containerEl.style.height = '';
       containerEl.style.minWidth = '';
       containerEl.style.minHeight = '';
-      const initialWidth = 400;
-      document.querySelector('html')!.style.fontSize = `${initialWidth}px`;
+      // const initialWidth = 400;
+      // document.querySelector('html')!.style.fontSize = `${initialWidth}px`;
+      baseSize.value = 400;
 
       const mainImage = containerEl.querySelector<HTMLDivElement>('.main-image');
       if (!mainImage)
@@ -132,26 +134,27 @@ export default defineComponent({
 
       const [iw, ih] = await getImgSize();
       if (iw < ih) {
-        mainImage.style.width = `${iw / ih}rem`;
-        mainImage.style.height = '1rem';
+        mainImage.style.width = `calc(${iw / ih} * var(--base-size))`;
+        mainImage.style.height = `var(--base-size)`;
       }
       else {
-        mainImage.style.width = '1rem';
-        mainImage.style.height = `${ih / iw}rem`;
+        mainImage.style.width = `var(--base-size)`;
+        mainImage.style.height = `calc(${ih / iw} * var(--base-size))`;
       }
       const scale = 4;
       const wr = iw / ih * scale;
       const hr = wr * (ih / iw);
-      mainImage.style.width = `${wr}rem`;
-      mainImage.style.height = `${hr}rem`;
+      mainImage.style.width = `calc(${wr} * var(--base-size))`;
+      mainImage.style.height = `calc(${hr} * var(--base-size))`;
 
       const { width: w1, height: h1 } = containerEl.getBoundingClientRect();
 
       const imgRatio = w1 / h1;
       isHorizontal.value = imgRatio <= ow / oh;
-      const fontSize = isHorizontal.value ? (initialWidth * oh) / h1 : (initialWidth * ow) / w1;
+      const fontSize = isHorizontal.value ? (baseSize.value * oh) / h1 : (baseSize.value * ow) / w1;
 
-      document.querySelector('html')!.style.fontSize = `${fontSize}px`;
+      baseSize.value = fontSize;
+      // document.querySelector('html')!.style.fontSize = `${fontSize}px`;
 
       sizeRatio.value = isHorizontal.value ? oh / fontSize : ow / fontSize;
 
@@ -184,7 +187,7 @@ export default defineComponent({
       });
     }
     return () => (
-      <div ref={el} class="co-render" style={{ opacity: isLoading.value ? 0 : 1, fontFamily: `""` }}>
+      <div ref={el} class="co-render" style={{ 'opacity': isLoading.value ? 0 : 1, 'fontFamily': `""`, '--base-size': `${baseSize.value}px` }}>
         <div ref={bgEl} class="background" style={bgStyle.value}>
           <div class="background-image" style={bgImgStyle.value}></div>
           {render()}

@@ -2,7 +2,7 @@
   <div
     class="tpl-card" :class="{ 'is-horizontal': isHorizontal, 'is-logo-shadow': logoShadow }"
     :style="{
-      '--border-padding': `${borderPadding}rem`,
+      '--border-padding': `calc(${borderPadding} * var(--base-size))`,
       '--border-color': borderColor,
       '--box-shadow': shadow,
       '--font-scale': fontScale,
@@ -131,7 +131,7 @@ const props = defineProps({
   },
   shadow: {
     type: String,
-    default: '0 0 0.2rem 0 rgba(0, 0, 0, 0.8)',
+    default: '0 0 calc(0.2 * var(--base-size)) 0 rgba(0, 0, 0, 0.8)',
     __co: {
       label: '阴影',
       type: 'shadow',
@@ -161,10 +161,14 @@ const isHorizontal = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@function size($multiplier) {
+  @return calc(var(--base-size, 1rem) * $multiplier);
+}
+
 .tpl-card {
-  --border-padding: 0.01rem;
+  --border-padding: size(0.01);
   --border-color: #fff;
-  --box-shadow: 0 0 0.2rem rgba(0, 0, 0, 0.8);
+  --box-shadow: 0 0 size(0.2) rgba(0, 0, 0, 0.8);
   --font-scale: 1;
   --text-color: #000;
   padding: var(--border-padding) var(--border-padding) 0;
@@ -176,7 +180,7 @@ const isHorizontal = computed(() => {
   &.is-logo-shadow {
     .make-model .make-logo {
       > img {
-        filter: drop-shadow(0 0 0.02rem var(--text-color)) drop-shadow(0 0 0.02rem var(--text-color));
+        filter: drop-shadow(0 0 size(0.02) var(--text-color)) drop-shadow(0 0 size(0.02) var(--text-color));
       }
     }
   }
@@ -186,11 +190,11 @@ const isHorizontal = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 0.4rem;
-  padding-left: 0.1rem;
-  padding-right: 0.1rem;
+  min-height: size(0.4);
+  padding-left: size(0.1);
+  padding-right: size(0.1);
   padding-top: calc(var(--border-padding) / 2);
-  font-size: calc(var(--font-scale) * 0.1rem);
+  font-size: calc(var(--font-scale) * size(0.1));
 
   .make-model {
     display: flex;
@@ -211,17 +215,17 @@ const isHorizontal = computed(() => {
 
       > img,
       :deep(svg) {
-        height: 100rem;
-        max-height: calc(var(--font-scale) * 0.2rem);
-        max-width: calc(var(--font-scale) * 0.6rem);
+        height: size(100);
+        max-height: calc(var(--font-scale) * size(0.2));
+        max-width: calc(var(--font-scale) * size(0.6));
       }
     }
 
     .model-name {
       display: flex;
       align-items: flex-end;
-      margin-left: 0.05rem;
-      font-size: calc(var(--font-scale) * 0.1rem);
+      margin-left: size(0.05);
+      font-size: calc(var(--font-scale) * size(0.1));
     }
   }
 
@@ -229,15 +233,15 @@ const isHorizontal = computed(() => {
     .basie-info {
       display: flex;
       align-items: flex-end;
-      gap: 0.5em;
-      margin-left: calc(var(--font-scale) * 0.1rem);
-      font-size: calc(var(--font-scale) * 0.1rem);
+      gap: size(0.05);
+      margin-left: calc(var(--font-scale) * size(0.1));
+      font-size: calc(var(--font-scale) * size(0.1));
     }
 
     .date-time {
       display: flex;
       justify-content: flex-end;
-      font-size: calc(var(--font-scale) * 0.08rem);
+      font-size: calc(var(--font-scale) * size(0.08));
       text-align: right;
       color: color-mix(in srgb, var(--text-color) 50%, transparent);
     }
@@ -251,28 +255,28 @@ const isHorizontal = computed(() => {
   .card-info {
     flex-direction: column;
     height: unset;
-    padding: 0.1rem;
-    padding-left: calc(var(--border-padding) / 2 + 0.1rem);
+    padding: size(0.1);
+    padding-left: calc(var(--border-padding) / 2 + size(0.1));
 
     .make-model {
       flex: 1;
       flex-direction: column;
       justify-content: center;
-      gap: 0.1rem;
-      // width: 0.1rem;
+      gap: size(0.1);
+      // width: size(0.1);
       // transform: rotate(90deg);
     }
     .details-info {
       .basie-info {
         align-items: center;
         flex-direction: column;
-        gap: 0.5em;
+        gap: size(0.05);
         margin-left: 0;
-        font-size: calc(var(--font-scale) * 0.1rem);
+        font-size: calc(var(--font-scale) * size(0.1));
       }
 
       .date-time {
-        margin-top: 0.1rem;
+        margin-top: size(0.1);
         word-break: keep-all;
         white-space: break-spaces;
       }
@@ -282,7 +286,7 @@ const isHorizontal = computed(() => {
 
 .main-image {
   /* width: 100%; */
-  width: 1rem;
+  width: size(1);
   height: auto;
 }
 </style>
