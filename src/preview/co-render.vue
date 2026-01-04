@@ -83,6 +83,8 @@ export default defineComponent({
       }, 200);
     });
 
+    window.addEventListener('resize', handleCalcSize);
+
     watch(() => [props.settings, props.tpl, props.tplProps], () => {
       setTimeout(() => {
         handleCalcSize();
