@@ -56,8 +56,7 @@ const templates = Object.values(templateMap);
 const manifestMap = import.meta.glob<any>('./templates/**/manifest.json', { eager: true });
 const manifests = Object.values(manifestMap);
 
-const url = `${location.origin}/dist/`;
-// const url = 'http://tp-copicseal.kohai.top/';
+const url = import.meta.env.DEV ? `${location.origin}/dist/` : `${location.origin}/`;
 
 async function loadData() {
   const parser = new TemplateParser(url);
