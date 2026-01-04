@@ -110,17 +110,11 @@ import type { TemplateGroupManifest, TemplateManifest, TemplateSource } from './
 import { ref, shallowRef } from 'vue';
 import CoRender from './preview/co-render.vue';
 import { TemplateParser } from './utils/template';
+import { LocalTemplateParser } from './utils/template-local';
 
-// 导入所有模板组件
-const templateMap = import.meta.glob<any>('./templates/**/*.vue', { eager: true, import: 'default' });
-const templates = Object.values(templateMap);
-
-// 导入组件的manifest信息
-const manifestMap = import.meta.glob<any>('./templates/**/manifest.json', { eager: true });
-const manifests = Object.values(manifestMap);
-
+const isLocalRemote = true;
 const url = import.meta.env.DEV ? `${location.origin}/dist/` : `${location.origin}/`;
-const parser = new TemplateParser(url);
+const parser = (import.meta.env.DEV && !isLocalRemote) ? new LocalTemplateParser() : new TemplateParser(url);
 
 const templateInfo = ref<TemplateGroupManifest>();
 
@@ -128,13 +122,6 @@ async function loadData() {
   templateInfo.value = await parser.getInfo();
 }
 loadData();
-
-// 为每个组件添加名称信息
-for (let i = 0; i < templates.length; i++) {
-  if (manifests[i]) {
-    templates[i].name = manifests[i].name;
-  }
-}
 
 // 组件选择状态 - 使用 shallowRef 避免对组件对象的深度响应式处理
 const selectedTpl = shallowRef<TemplateManifest & TemplateSource>();
@@ -467,6 +454,7 @@ body {
   background: #f5f7fa;
   display: flex;
   flex-direction: column;
+  overflow: auto;
 
   .preview-panel {
     height: 100%;
@@ -493,7 +481,7 @@ body {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 24px;
+      padding: 12px 20px;
       border-bottom: 1px solid #e9ecef;
       background: #ffffff;
 
@@ -534,7 +522,7 @@ body {
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-      padding: 40px;
+      padding: 20px;
       position: relative;
       overflow: auto;
 
