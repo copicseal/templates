@@ -221,7 +221,7 @@ const exif = {
 };
 
 // 组件属性
-const imgUrl = `https://placehold.co/${exif.ImageWidth}x${exif.ImageHeight}/EEE/31343C`;
+const imgUrl = `https://placehold.co/${exif.ImageWidth}x${exif.ImageHeight}/547792/EAE0CF`;
 
 const settings: Settings = {
   background: {
@@ -235,7 +235,7 @@ const settings: Settings = {
         },
         {
           type: 'brightness',
-          value: '100%',
+          value: '120%',
         },
       ],
     },
@@ -244,7 +244,7 @@ const settings: Settings = {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    padding: [1, 1],
+    padding: [0.5, 0.5],
   },
   outputs: [],
 };

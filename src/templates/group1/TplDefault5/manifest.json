@@ -1,0 +1,14 @@
+{
+  "id": "TplDefault5",
+  "name": "文字内嵌模板",
+  "version": "1.0.0",
+  "description": "文字内嵌模板",
+  "entry": "index.js",
+  "css": "index.css",
+  "files": [
+    "index.js",
+    "index.css"
+  ],
+  "author": "",
+  "license": "MIT"
+}

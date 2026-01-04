@@ -1,6 +1,8 @@
-import type { ComponentOptions } from 'vue';
+import type { ComponentOptions, Ref } from 'vue';
+import { ref } from 'vue';
 import * as Vue from 'vue';
 import { createSandbox } from './sandbox';
+import { verifySignedCode } from './validator';
 
 export class TemplateParser {
   private baseUrl!: string;
@@ -37,9 +39,12 @@ export async function loadTemplateInfo(url: string) {
             const curl = `${joinUrl(url, templatePath)}/`;
             const data = await fetchJSON<TemplateManifest>(joinUrl(curl, 'manifest.json'));
             data.url = curl;
-            const source = await fetchText(joinUrl(data.url, data.entry));
-            const valid = await verifyCodeSignature(source);
+            const valid = ref<boolean>();
             data.valid = valid;
+            (async () => {
+              const source = await fetchText(joinUrl(data.url, data.entry));
+              valid.value = await verifySignedCode(source);
+            })();
             return data;
           }),
         );
@@ -67,39 +72,6 @@ export async function loadTemplateSource(info: TemplateManifest): Promise<Templa
 export function parseVueComp(source: string) {
   const exports = createSandbox<ComponentOptions>({ Vue }).run(source).exports;
   return Object.values(exports)[0]!;
-}
-
-export async function verifyCodeSignature(source: string) {
-  const { content, signature } = extractCode(source) || {};
-  if (!content || !signature)
-    return false;
-
-  const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/verify', {
-    method: 'POST',
-    body: JSON.stringify({
-      code: content,
-      signature,
-    }),
-  }).then(res => res.json() as Promise<{ valid: boolean }>).catch(() => ({ valid: false }));
-
-  return !!res.valid;
-}
-
-function extractCode(code: string) {
-  // eslint-disable-next-line regexp/no-super-linear-backtracking
-  const match = code.match(/\/\*\s*@signature:[\s\S]*?value=([\w+/=]+)[\s\S]*?\*\//);
-
-  if (!match)
-    return null;
-
-  const signature = match[1];
-
-  const content = code
-    .replace(/\/\*\s*@signature[\s\S]*?\*\//, '')
-    .replace(/\/\/# sourceMappingURL=[\s\S]*$/, '')
-    .trim();
-
-  return { content, signature };
 }
 
 async function fetchJSON<T = any>(url: string) {
@@ -154,7 +126,7 @@ export type TemplateManifest = {
   files: string[]
   author?: string
   license?: string
-  valid?: boolean
+  valid?: boolean | Ref<boolean | undefined>
 };
 
 export type TemplateSource = {
