@@ -69,6 +69,7 @@ function toggleFullscreen() {
 
 <style lang="scss" scoped>
 .preview-panel {
+  flex: 1;
   height: 100%;
   background: #ffffff;
   margin: 20px;

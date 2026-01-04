@@ -10,20 +10,20 @@
     </div>
 
     <div v-if="Object.keys(tplProps).length > 0" class="props-content">
-      <div v-for="(key) in Object.keys(tplProps)" :key="key">
-        <div v-show="!tplProps[key].hidden" class="label" :title="tplProps[key].__co?.description">
-          {{ tplProps[key].__co?.label || key }}:
+      <div v-for="(prop) in tplPropsList" :key="prop.key">
+        <div v-show="!prop.hidden" class="label" :title="prop.__co?.description">
+          {{ prop.__co?.label || prop.key }}:
         </div>
-        <div v-show="!tplProps[key].hidden" class="value">
+        <div v-show="!prop.hidden" class="value">
           <input
-            v-if="tplProps[key].type === Boolean"
-            v-model="templateProps[key]"
+            v-if="prop.type === Boolean"
+            v-model="templateProps[prop.key]"
             type="checkbox"
             class="prop-checkbox"
           >
           <input
             v-else
-            v-model="templateProps[key]"
+            v-model="templateProps[prop.key]"
             type="text"
             class="prop-input"
           >
@@ -34,6 +34,8 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue';
+
 // import { watch } from 'vue';
 
 type TplProp = {
@@ -61,6 +63,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const templateProps = defineModel<Record<string, any>>('templateProps', {
   default: () => ({}),
+});
+
+const tplPropsList = computed(() => {
+  return Object.keys(props.tplProps).map(key => ({
+    key,
+    ...props.tplProps[key],
+  })).filter(prop => prop.__co);
 });
 
 // 监听 templateProps 的变化并向外发出
