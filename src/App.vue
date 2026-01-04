@@ -112,7 +112,7 @@ import CoRender from './preview/co-render.vue';
 import { TemplateParser } from './utils/template';
 import { LocalTemplateParser } from './utils/template-local';
 
-const isLocalRemote = true;
+const isLocalRemote = false;
 const url = import.meta.env.DEV ? `${location.origin}/dist/` : `${location.origin}/`;
 const parser = (import.meta.env.DEV && !isLocalRemote) ? new LocalTemplateParser() : new TemplateParser(url);
 

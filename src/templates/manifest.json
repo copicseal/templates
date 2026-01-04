@@ -15,6 +15,12 @@
       "name": "模板分组2",
       "description": "高级模板集合",
       "templates": []
+    },
+    {
+      "id": "group3",
+      "name": "水印分组",
+      "description": "专注给图片添加水印，用于保护图片版权或敏感信息",
+      "templates": []
     }
   ]
 }

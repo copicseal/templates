@@ -1,0 +1,14 @@
+{
+  "id": "TplWatermark",
+  "name": "满屏水印",
+  "version": "1.0.0",
+  "description": "给图片添加满屏水印，用于保护图片版权或敏感信息",
+  "entry": "index.js",
+  "css": "index.css",
+  "files": [
+    "index.js",
+    "index.css"
+  ],
+  "author": "",
+  "license": "MIT"
+}
