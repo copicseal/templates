@@ -47,6 +47,8 @@ loadData();
 
 // 组件选择状态 - 使用 shallowRef 避免对组件对象的深度响应式处理
 const selectedTpl = shallowRef<TemplateManifest & TemplateSource>();
+// 模板属性
+const templateProps = ref<Record<string, any>>({});
 
 // 预加载CSS工具函数
 function preloadCSS(cssUrl: string): Promise<void> {
@@ -99,6 +101,13 @@ async function selectComponent(tpl: TemplateManifest) {
       existingLink.remove();
     }
   }
+  const compProps = (selectedTpl.value?.component.props || {});
+  templateProps.value = Object.keys(compProps).reduce((acc, key) => {
+    if (compProps[key].__co) {
+      acc[key] = compProps[key].default;
+    }
+    return acc;
+  }, {} as Record<string, any>);
 }
 
 // 预览控制方法
@@ -123,9 +132,6 @@ const exif = {
 
 // 组件属性
 const imgUrl = `https://placehold.co/${exif.ImageWidth}x${exif.ImageHeight}/547792/EAE0CF`;
-
-// 模板属性
-const templateProps = ref<Record<string, any>>({});
 
 // 更新模板属性的方法
 function updateTemplateProps(newProps: Record<string, any>) {

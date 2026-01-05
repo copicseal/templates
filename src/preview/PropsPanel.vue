@@ -15,8 +15,20 @@
           {{ prop.__co?.label || prop.key }}:
         </div>
         <div v-show="!prop.hidden" class="value">
+          <div v-if="prop.__co?.enums">
+            <label v-for="enumItem in prop.__co.enums" :key="enumItem.value" style="margin-right: 8px;">
+              <input
+                v-model="templateProps[prop.key]"
+                type="radio"
+                :value="enumItem.value"
+                class="prop-radio"
+              >
+              {{ enumItem.label }}
+            </label>
+          </div>
+          <input v-else-if="prop.__co?.type === 'color'" v-model="templateProps[prop.key]" type="color">
           <input
-            v-if="prop.type === Boolean"
+            v-else-if="prop.type === Boolean"
             v-model="templateProps[prop.key]"
             type="checkbox"
             class="prop-checkbox"
