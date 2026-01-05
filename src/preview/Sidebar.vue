@@ -1,13 +1,32 @@
 <template>
   <div class="sidebar">
     <div class="sidebar-header">
-      <h2 class="sidebar-title">
-        {{ templateInfo.name }}
-      </h2>
-      <p v-if="templateInfo.description" class="sidebar-description">
-        {{ templateInfo.description }}
-      </p>
+      <div class="sidebar-header-content">
+        <h2 class="sidebar-title">
+          {{ templateInfo.name }}
+        </h2>
+        <p v-if="templateInfo.description" class="sidebar-description">
+          {{ templateInfo.description }}
+        </p>
+      </div>
+      <button class="settings-btn" @click="showSettings = true">
+        ⚙️
+      </button>
     </div>
+
+    <SettingsModal
+      :show="showSettings"
+      title="预览设置"
+      @close="showSettings = false"
+    >
+      <PreviewSettings
+        :url-mode="urlMode"
+        :custom-url="customUrl"
+        @update:url-mode="$emit('update:urlMode', $event)"
+        @update:custom-url="$emit('update:customUrl', $event)"
+        @save="handleSave"
+      />
+    </SettingsModal>
 
     <div class="template-groups">
       <div
@@ -65,18 +84,33 @@
 
 <script lang="ts" setup>
 import type { TemplateGroupManifest, TemplateManifest } from '../utils/template';
+import { ref } from 'vue';
+import PreviewSettings from './PreviewSettings.vue';
+import SettingsModal from './SettingsModal.vue';
 
 type Props = {
   templateInfo: TemplateGroupManifest
   selectedTpl?: TemplateManifest | null
+  urlMode: 'current' | 'custom'
+  customUrl: string
 };
 
 type Emits = {
   (e: 'select', tpl: TemplateManifest): void
+  (e: 'update:urlMode', value: 'current' | 'custom'): void
+  (e: 'update:customUrl', value: string): void
+  (e: 'save'): void
 };
 
 defineProps<Props>();
-defineEmits<Emits>();
+const emit = defineEmits<Emits>();
+
+const showSettings = ref(false);
+
+function handleSave() {
+  showSettings.value = false;
+  emit('save');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -93,6 +127,14 @@ defineEmits<Emits>();
     padding: 24px 20px 16px;
     border-bottom: 1px solid #f1f3f4;
     background: #ffffff;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    .sidebar-header-content {
+      flex: 1;
+      min-width: 0;
+    }
 
     .sidebar-title {
       font-size: 20px;
@@ -105,6 +147,26 @@ defineEmits<Emits>();
       font-size: 13px;
       color: #666;
       line-height: 1.4;
+    }
+
+    .settings-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background: #e9ecef;
+        transform: rotate(45deg);
+      }
     }
   }
 
@@ -193,6 +255,7 @@ defineEmits<Emits>();
                 opacity: 0.8;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
+                line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 margin-top: 2px;
@@ -265,7 +328,6 @@ defineEmits<Emits>();
   }
 }
 
-// 响应式设计
 @media (max-width: 768px) {
   .sidebar {
     .template-groups {
