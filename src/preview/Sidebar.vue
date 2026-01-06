@@ -6,13 +6,26 @@
           {{ templateInfo.name }}
         </h2>
         <p v-if="templateInfo.description" class="sidebar-description">
-          {{ templateInfo.description }}
+          {{ templateInfo.description }} <small>({{ templateInfo.url }})</small>
         </p>
       </div>
-      <button class="settings-btn" @click="showSettings = true">
-        ⚙️
-      </button>
+      <div class="header-actions">
+        <button class="upload-btn" title="上传模板包" @click="triggerFileInput">
+          📤
+        </button>
+        <button class="settings-btn" title="设置" @click="showSettings = true">
+          ⚙️
+        </button>
+      </div>
     </div>
+
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".zip"
+      style="display: none"
+      @change="handleFileChange"
+    >
 
     <SettingsModal
       :show="showSettings"
@@ -100,12 +113,27 @@ type Emits = {
   (e: 'update:urlMode', value: 'current' | 'custom'): void
   (e: 'update:customUrl', value: string): void
   (e: 'save'): void
+  (e: 'upload', file: File): void
 };
 
 defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const showSettings = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+function triggerFileInput() {
+  fileInput.value?.click();
+}
+
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    emit('upload', file);
+  }
+  target.value = '';
+}
 
 function handleSave() {
   showSettings.value = false;
@@ -149,6 +177,12 @@ function handleSave() {
       line-height: 1.4;
     }
 
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .upload-btn,
     .settings-btn {
       width: 36px;
       height: 36px;
@@ -162,11 +196,16 @@ function handleSave() {
       display: flex;
       align-items: center;
       justify-content: center;
+    }
 
-      &:hover {
-        background: #e9ecef;
-        transform: rotate(45deg);
-      }
+    .upload-btn:hover {
+      background: #e9ecef;
+      transform: translateY(-2px);
+    }
+
+    .settings-btn:hover {
+      background: #e9ecef;
+      transform: rotate(45deg);
     }
   }
 

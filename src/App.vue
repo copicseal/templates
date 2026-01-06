@@ -9,6 +9,7 @@
       @update:url-mode="updateUrlMode"
       @update:custom-url="updateCustomUrl"
       @save="handleSave"
+      @upload="handleUpload"
     />
     <div class="main-content">
       <PreviewPanel
@@ -38,6 +39,7 @@ import PropsPanel from './preview/PropsPanel.vue';
 import Sidebar from './preview/Sidebar.vue';
 import { TemplateParser } from './utils/template';
 import { LocalTemplateParser } from './utils/template-local';
+import { ZipTemplateParser } from './utils/template-zip';
 
 const isLocalRemote = false;
 const defaultUrl = import.meta.env.DEV ? `${location.origin}/dist/` : `${location.origin}/`;
@@ -108,6 +110,13 @@ async function handleSave() {
   templateProps.value = {};
 }
 
+async function handleUpload(file: File) {
+  parser = new ZipTemplateParser(file);
+  await loadData();
+  selectedTpl.value = undefined;
+  templateProps.value = {};
+}
+
 async function loadData() {
   templateInfo.value = await parser.getInfo();
 }
@@ -135,12 +144,33 @@ function preloadCSS(cssUrl: string): Promise<void> {
   });
 }
 
+function loadCSS(cssSource: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const style = document.createElement('style');
+    style.textContent = cssSource;
+    document.head.appendChild(style);
+
+    style.onload = () => {
+      resolve();
+    };
+
+    style.onerror = () => {
+      reject(new Error('CSS加载失败'));
+    };
+  });
+}
+
 async function selectComponent(tpl: TemplateManifest) {
   const source = await parser.getTemplateSource(tpl);
 
   if (source.css) {
     try {
-      await preloadCSS(source.css);
+      if (source.css.startsWith('http')) {
+        await preloadCSS(source.css);
+      }
+      else {
+        await loadCSS(source.css);
+      }
       selectedTpl.value = { ...tpl, ...source };
     }
     catch (error) {

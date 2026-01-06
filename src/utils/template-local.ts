@@ -8,11 +8,11 @@ const manifestMap = import.meta.glob<any>('../templates/**/manifest.json', { eag
 
 export class LocalTemplateParser extends TemplateParser {
   constructor() {
-    super('');
+    super('local');
   }
 
   getInfo(): Promise<TemplateGroupManifest> {
-    return loadLocalTpl();
+    return loadLocalTpl(this.baseUrl);
   }
 
   async getTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
@@ -24,8 +24,10 @@ export class LocalTemplateParser extends TemplateParser {
   }
 }
 
-export async function loadLocalTpl() {
+export async function loadLocalTpl(url: string) {
   const groupInfo = manifestMap['../templates/manifest.json'] as TemplateGroupManifest;
+  groupInfo.url = url;
+
   groupInfo.groups?.forEach((group) => {
     group.templates = Object.keys(manifestMap).filter(key => key.includes(`/templates/${group.id}/`)).map(key => ({
       ...manifestMap[key],

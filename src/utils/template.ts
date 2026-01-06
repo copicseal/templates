@@ -5,9 +5,9 @@ import { createSandbox } from './sandbox';
 import { verifySignedCode } from './validator';
 
 export class TemplateParser {
-  private baseUrl!: string;
-  private info!: TemplateGroupManifest;
-  private sourceMap = new Map<string, TemplateSource>();
+  protected baseUrl!: string;
+  protected info!: TemplateGroupManifest;
+  protected sourceMap = new Map<string, TemplateSource>();
   constructor(url: string) {
     this.baseUrl = url;
   }
