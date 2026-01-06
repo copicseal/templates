@@ -76,13 +76,13 @@ onMounted(() => {
       const parsed = JSON.parse(savedSettings);
       urlMode.value = parsed.urlMode || 'current';
       customUrl.value = parsed.customUrl || '';
-      parser = getParser();
-      loadData();
     }
     catch (e) {
       console.warn('Failed to parse settings from localStorage', e);
     }
   }
+  parser = getParser();
+  loadData();
 });
 
 function updateUrlMode(value: 'current' | 'custom') {
