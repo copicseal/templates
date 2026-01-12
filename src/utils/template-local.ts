@@ -8,32 +8,46 @@ const manifestMap = import.meta.glob<any>('../templates/**/manifest.json', { eag
 
 export class LocalTemplateParser extends TemplateParser {
   constructor() {
-    super('local');
+    super('https://local/');
   }
 
-  getInfo(): Promise<TemplateGroupManifest> {
-    return loadLocalTpl(this.baseUrl);
+  protected async loadGroupInfo(url: string) {
+    const groupInfo = await this.fetchJSON<TemplateGroupManifest>(this.joinUrl(url, 'manifest.json'));
+    groupInfo.url = url;
+    groupInfo.groups?.forEach((group) => {
+      group.templates = Object.keys(manifestMap).filter(key => key.includes(`/templates/${group.id}/`)).map(key => ({
+        ...manifestMap[key],
+        url: key.replace('manifest.json', '').replace('../templates/', ''),
+      }));
+    });
+
+    return groupInfo;
   }
 
-  async getTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
+  protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
+    const source = await this.fetchJSON(this.getLocalUrl(this.joinUrl(info.url, 'index.vue')));
+
     return {
-      ...info,
-      source: '',
-      component: templateMap[`${info.url}index.vue`],
+      source,
+      component: source,
+      css: undefined,
+      files: [],
     };
   }
-}
 
-export async function loadLocalTpl(url: string) {
-  const groupInfo = manifestMap['../templates/manifest.json'] as TemplateGroupManifest;
-  groupInfo.url = url;
+  protected async verifyTemplateSource(_source: string) {
+    return true;
+  }
 
-  groupInfo.groups?.forEach((group) => {
-    group.templates = Object.keys(manifestMap).filter(key => key.includes(`/templates/${group.id}/`)).map(key => ({
-      ...manifestMap[key],
-      url: key.replace('manifest.json', ''),
-    }));
-  });
+  protected async fetchJSON<T = any>(url: string): Promise<T> {
+    return ({ ...templateMap, ...manifestMap })[this.getLocalUrl(url)] as Promise<T>;
+  }
 
-  return groupInfo;
+  protected async fetchText(url: string): Promise<string> {
+    return ({ ...templateMap, ...manifestMap })[this.getLocalUrl(url)] as Promise<string>;
+  }
+
+  private getLocalUrl(url: string) {
+    return url.replace(this.baseUrl, '../templates/');
+  }
 }

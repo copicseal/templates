@@ -14,85 +14,95 @@ export class TemplateParser {
 
   async getInfo() {
     if (!this.info) {
-      this.info = await loadTemplateInfo(this.baseUrl);
+      this.info = await this.loadTemplateInfo(this.baseUrl);
     }
     return this.info;
   }
 
   async getTemplateSource(info: TemplateManifest) {
     if (!this.sourceMap.has(info.url)) {
-      this.sourceMap.set(info.url, await loadTemplateSource(info));
+      this.sourceMap.set(info.url, await this.loadTemplateSource(info));
     }
     return this.sourceMap.get(info.url)!;
   }
-}
 
-export async function loadTemplateInfo(url: string) {
-  const groupInfo = await fetchJSON<TemplateGroupManifest>(joinUrl(url, 'manifest.json'));
-  groupInfo.url = url;
-  groupInfo.groups = await Promise.all(
-    groupInfo.groups?.map(async (group) => {
-      if (group.templates && Array.isArray(group.templates)) {
-        const templateInfos = await Promise.all(
-          group.templates.map(async (template) => {
-            const templatePath = template.url;
-            const curl = `${joinUrl(url, templatePath)}/`;
-            const data = await fetchJSON<TemplateManifest>(joinUrl(curl, 'manifest.json'));
-            data.url = curl;
-            const valid = ref<boolean>();
-            data.valid = valid;
-            (async () => {
-              const source = await fetchText(joinUrl(data.url, data.entry));
-              valid.value = await verifySignedCode(source);
-            })();
-            return data;
-          }),
-        );
-
-        group.templates = templateInfos;
-      }
-      return group;
-    }) ?? [],
-  );
-
-  return groupInfo;
-}
-
-export async function loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-  const { entry, css, files } = info;
-  const source = await fetchText(joinUrl(info.url, entry));
-  return {
-    source,
-    component: parseVueComp(source),
-    css: css ? joinUrl(info.url, css) : undefined,
-    files: files.map(f => joinUrl(info.url, f)),
-  };
-}
-
-export function parseVueComp(source: string) {
-  const exports = createSandbox<ComponentOptions>({ Vue }).run(source).exports;
-  return Object.values(exports)[0]!;
-}
-
-async function fetchJSON<T = any>(url: string) {
-  return fetch(url).then(res => res.json() as Promise<T>);
-}
-async function fetchText(url: string) {
-  return fetch(url).then(res => res.text());
-}
-
-/**
- * 合并URL路径
- * @returns 合并后的URL路径
- */
-function joinUrl(base: string, ...paths: string[]) {
-  let url = new URL(base);
-
-  for (const p of paths) {
-    url = new URL(p, url);
+  protected async loadGroupInfo(url: string) {
+    const groupInfo = await this.fetchJSON<TemplateGroupManifest>(this.joinUrl(url, 'manifest.json'));
+    groupInfo.url = url;
+    return groupInfo;
   }
 
-  return url.toString().replace(/\/$/, '');
+  protected async loadTemplateInfo(url: string) {
+    const groupInfo = await this.loadGroupInfo(url);
+    groupInfo.groups = await Promise.all(
+      groupInfo.groups?.map(async (group) => {
+        if (group.templates && Array.isArray(group.templates)) {
+          const templateInfos = await Promise.all(
+            group.templates.map(async (template) => {
+              const templatePath = template.url;
+              const curl = `${this.joinUrl(url, templatePath)}/`;
+              const data = await this.fetchJSON<TemplateManifest>(this.joinUrl(curl, 'manifest.json'));
+              data.url = curl;
+              const valid = ref<boolean>();
+              data.valid = valid;
+              (async () => {
+                const source = await this.fetchText(this.joinUrl(data.url, data.entry));
+                valid.value = await this.verifyTemplateSource(source);
+              })();
+              return data;
+            }),
+          );
+
+          group.templates = templateInfos;
+        }
+        return group;
+      }) ?? [],
+    );
+
+    return groupInfo;
+  }
+
+  protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
+    const { entry, css, files } = info;
+    const source = await this.fetchText(this.joinUrl(info.url, entry));
+    return {
+      source,
+      component: this.parseVueComp(source),
+      css: css ? this.joinUrl(info.url, css) : undefined,
+      files: files.map(f => this.joinUrl(info.url, f)),
+    };
+  }
+
+  protected parseVueComp(source: string) {
+    const exports = createSandbox<ComponentOptions>({ Vue }).run(source).exports;
+    return Object.values(exports)[0]!;
+  }
+
+  protected async fetchJSON<T = any>(url: string) {
+    return fetch(url).then(res => res.json() as Promise<T>);
+  }
+
+  protected async fetchText(url: string) {
+    return fetch(url).then(res => res.text());
+  }
+
+  /**
+   * 合并URL路径
+   * @returns 合并后的URL路径
+   */
+  protected joinUrl(base: string, ...paths: string[]) {
+    let url = new URL(base);
+
+    for (const p of paths) {
+      url = new URL(p, url);
+    }
+
+    return url.toString().replace(/\/$/, '');
+  }
+
+  protected verifyTemplateSource(source: string) {
+    return verifySignedCode(source);
+  }
 }
 
 export type TemplateGroupManifest = {
