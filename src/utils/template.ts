@@ -45,7 +45,7 @@ export class TemplateParser {
               const valid = ref<boolean>();
               data.valid = valid;
               (async () => {
-                const json = await this.fetchJSON<{ code: string; signature: string }>(templateUrl);
+                const json = await this.fetchJSON<{ code: string, signature: string }>(templateUrl);
                 valid.value = await this.verifyTemplateSource(json.code);
               })();
               return data;
@@ -62,7 +62,7 @@ export class TemplateParser {
   }
 
   protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-    const json = await this.fetchJSON<{ code: string; style: string }>(info.url);
+    const json = await this.fetchJSON<{ code: string, style: string }>(info.url);
     return {
       source: json.code,
       component: this.parseVueComp(json.code),
@@ -83,10 +83,6 @@ export class TemplateParser {
     return fetch(url).then(res => res.text());
   }
 
-  /**
-   * 合并URL路径
-   * @returns 合并后的URL路径
-   */
   protected joinUrl(base: string, ...paths: string[]) {
     let url = new URL(base);
 

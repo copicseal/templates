@@ -24,6 +24,7 @@ export async function run() {
     await buildTemplate(template, componentsDir, distDir);
   }
 
+  cleanupAllTemplates(distDir, templates);
   generateManifest(distDir, componentsDir, templates);
 
   logger.success('所有组件构建完成', `共构建 ${templates.length} 个模板`);
@@ -175,23 +176,28 @@ async function processTemplateFilesFromBuilt(template, builtPath) {
     style = fs.readFileSync(cssFile, 'utf8');
   }
 
-  cleanupBuiltFiles(builtPath);
-
   return { code, style, signature };
 }
 
-function cleanupBuiltFiles(builtPath) {
-  const jsFile = path.join(builtPath, 'index.js');
-  const cssFile = path.join(builtPath, 'index.css');
+function cleanupAllTemplates(distDir, templates) {
+  logger.section('清理临时文件');
 
-  if (fs.existsSync(jsFile))
-    fs.unlinkSync(jsFile);
-  if (fs.existsSync(cssFile))
-    fs.unlinkSync(cssFile);
+  templates.forEach((template) => {
+    const builtPath = path.join(distDir, 'templates', template.groupId, template.name);
+    if (fs.existsSync(builtPath)) {
+      const jsFile = path.join(builtPath, 'index.js');
+      const cssFile = path.join(builtPath, 'index.css');
+      if (fs.existsSync(jsFile))
+        fs.unlinkSync(jsFile);
+      if (fs.existsSync(cssFile))
+        fs.unlinkSync(cssFile);
+      const contents = fs.readdirSync(builtPath);
+      if (contents.length === 0)
+        fs.rmdirSync(builtPath);
+    }
+  });
 
-  const dirContents = fs.readdirSync(builtPath);
-  if (dirContents.length === 0)
-    fs.rmdirSync(builtPath);
+  logger.success('临时文件已清理');
 }
 
 function buildComponent(template) {

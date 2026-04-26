@@ -1,4 +1,5 @@
 import type { TemplateGroupManifest, TemplateManifest, TemplateSource } from './template';
+import { ref } from 'vue';
 import { TemplateParser } from './template';
 
 // 导入所有模板组件
@@ -11,25 +12,65 @@ export class LocalTemplateParser extends TemplateParser {
     super('https://local/');
   }
 
-  protected async loadGroupInfo(url: string) {
-    const groupInfo = await this.fetchJSON<TemplateGroupManifest>(this.joinUrl(url, 'manifest.json'));
-    groupInfo.url = url;
-    groupInfo.groups?.forEach((group) => {
-      group.templates = Object.keys(manifestMap).filter(key => key.includes(`/templates/${group.id}/`)).map(key => ({
-        ...manifestMap[key],
-        url: key.replace('manifest.json', '').replace('../templates/', ''),
-      }));
-    });
+  protected async loadTemplateInfo(url: string): Promise<TemplateGroupManifest> {
+    return this.loadGroupInfo(url);
+  }
+
+  protected async loadGroupInfo(url: string): Promise<TemplateGroupManifest> {
+    const groupInfo: TemplateGroupManifest = {
+      url,
+      name: '本地模板库',
+      version: '1.0.0',
+      groups: [],
+    };
+
+    const groupIds = ['group1', 'group2', 'group3'];
+    for (const groupId of groupIds) {
+      const templates: TemplateManifest[] = [];
+
+      Object.keys(manifestMap).forEach((key) => {
+        if (key.includes(`/templates/${groupId}/`)) {
+          const manifest = manifestMap[key];
+          templates.push({
+            id: manifest.id,
+            name: manifest.name,
+            version: manifest.version || '1.0.0',
+            description: manifest.description,
+            url: key.replace('manifest.json', '').replace('../templates/', ''),
+            valid: ref<boolean>(true),
+          });
+        }
+      });
+
+      if (templates.length > 0) {
+        groupInfo.groups!.push({
+          id: groupId,
+          name: this.getGroupName(groupId),
+          templates,
+        });
+      }
+    }
 
     return groupInfo;
   }
 
+  private getGroupName(groupId: string) {
+    const names: Record<string, string> = {
+      group1: '基础模板',
+      group2: '高级模板',
+      group3: '水印模板',
+    };
+    return names[groupId] || groupId;
+  }
+
   protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-    const source = await this.fetchJSON(this.getLocalUrl(this.joinUrl(info.url, 'index.vue')));
+    const urlPath = info.url.replace(/^\/|\/$/g, '');
+    const templateKey = `../templates/${urlPath}/index.vue`;
+    const component = templateMap[templateKey];
 
     return {
-      source,
-      component: source,
+      source: '',
+      component,
     };
   }
 
@@ -39,10 +80,6 @@ export class LocalTemplateParser extends TemplateParser {
 
   protected async fetchJSON<T = any>(url: string): Promise<T> {
     return ({ ...templateMap, ...manifestMap })[this.getLocalUrl(url)] as Promise<T>;
-  }
-
-  protected async fetchText(url: string): Promise<string> {
-    return ({ ...templateMap, ...manifestMap })[this.getLocalUrl(url)] as Promise<string>;
   }
 
   private getLocalUrl(url: string) {

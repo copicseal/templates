@@ -21,7 +21,7 @@ export class ZipTemplateParser extends TemplateParser {
   }
 
   protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-    const json = await this.fetchJSON<{ code: string; style: string }>(info.url);
+    const json = await this.fetchJSON<{ code: string, style: string }>(info.url);
     return {
       source: json.code,
       component: this.parseVueComp(json.code),

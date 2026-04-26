@@ -46,15 +46,24 @@ Copicseal template builder. Vue 3 + Vite + TypeScript SPA for managing template 
 ## COMMANDS
 
 ```bash
-npm run dev      # Start Vite dev server
-npm run build   # Build Vue app
-npm run build:tpl  # Build templates only
-npm run build:zip # Create zip bundles
-npm run create-template # Scaffold new template
+pnpm dev      # Start Vite dev server
+pnpm build    # Build Vue app
+pnpm lint     # Run ESLint (ALWAYS run before commit)
+pnpm build:tpl   # Build templates only
+pnpm build:zip   # Create zip bundles
+pnpm create-template  # Scaffold new template
 ```
 
 ## NOTES
 
 - Template library lives at `src/templates/` - unusual for SPA (typically app code only)
 - Groups: group1 (基础), group2 (高级), group3 (水印)
-- Output: dist/ with manifest.json + template zip bundles
+- Output: dist/ with manifest.json + template JSON bundles
+- Template JSON format: `{id}.json` with fields: id, name, version, description, author, license, code, style, signature
+
+## WORKFLOW
+
+1. Make code changes
+2. Run `npm run lint` to check for errors
+3. Do NOT auto-commit - wait for user confirmation
+4. User confirms → then commit
