@@ -16,7 +16,6 @@ export async function run() {
   initDist(distDir);
 
   const templates = scanTemplates(componentsDir);
-
   const groups = buildGroups(templates);
 
   logger.info(`扫描完成`, `发现 ${templates.length} 个模板，分为 ${groups.length} 个分组`);
@@ -100,7 +99,7 @@ function buildGroups(templates) {
     }
     templateMap.get(groupId).push({
       name: template.name,
-      url: `./templates/${template.relativePath}`,
+      url: `./templates/${groupId}/${template.name}.json`,
     });
   });
 
@@ -118,11 +117,26 @@ async function buildTemplate(template, componentsDir, distDir) {
   try {
     buildComponent(template);
 
-    const templateDistDir = path.join(distDir, 'templates', template.relativePath);
+    const templateDistDir = path.join(distDir, 'templates', template.groupId);
     fs.mkdirSync(templateDistDir, { recursive: true });
 
-    copyManifest(template, templateDistDir);
-    await processIndexFile(template, templateDistDir);
+    const builtTemplatePath = path.join(distDir, 'templates', template.groupId, template.name);
+    const result = await processTemplateFilesFromBuilt(template, builtTemplatePath);
+    const outputJson = {
+      id: template.manifest.id,
+      name: template.manifest.name,
+      version: template.manifest.version,
+      description: template.manifest.description,
+      author: template.manifest.author,
+      license: template.manifest.license,
+      code: result.code,
+      style: result.style,
+      signature: result.signature,
+    };
+
+    const outputPath = path.join(templateDistDir, `${template.name}.json`);
+    fs.writeFileSync(outputPath, JSON.stringify(outputJson, null, 2));
+    logger.success('JSON 输出完成', outputPath);
 
     spinner.succeed(`模板构建完成: ${template.name}`);
   }
@@ -131,6 +145,53 @@ async function buildTemplate(template, componentsDir, distDir) {
     logger.error('构建错误', error.message);
     process.exit(1);
   }
+}
+
+async function processTemplateFilesFromBuilt(template, builtPath) {
+  const jsFile = path.join(builtPath, 'index.js');
+  const cssFile = path.join(builtPath, 'index.css');
+
+  let code = '';
+  let style = '';
+  let signature = '';
+
+  if (fs.existsSync(jsFile)) {
+    const jsContent = fs.readFileSync(jsFile, 'utf8');
+    const processedCode = transformExports(jsContent, template.name);
+    if (processedCode) {
+      signature = await getCodeSignature(processedCode);
+      code = `${processedCode}
+
+/* @signature:alg=ed25519;value=${signature} */`;
+
+      logger.success('代码处理完成', `${template.name}/index.js`);
+    }
+    else {
+      logger.warning('代码处理跳过', `${template.name}/index.js - 未找到匹配模式`);
+    }
+  }
+
+  if (fs.existsSync(cssFile)) {
+    style = fs.readFileSync(cssFile, 'utf8');
+  }
+
+  cleanupBuiltFiles(builtPath);
+
+  return { code, style, signature };
+}
+
+function cleanupBuiltFiles(builtPath) {
+  const jsFile = path.join(builtPath, 'index.js');
+  const cssFile = path.join(builtPath, 'index.css');
+
+  if (fs.existsSync(jsFile))
+    fs.unlinkSync(jsFile);
+  if (fs.existsSync(cssFile))
+    fs.unlinkSync(cssFile);
+
+  const dirContents = fs.readdirSync(builtPath);
+  if (dirContents.length === 0)
+    fs.rmdirSync(builtPath);
 }
 
 function buildComponent(template) {
@@ -142,28 +203,17 @@ function buildComponent(template) {
   execSync('pnpm build', { env, stdio: 'inherit' });
 }
 
-function copyManifest(template, templateDistDir) {
-  const manifestPath = path.join(templateDistDir, 'manifest.json');
-  fs.writeFileSync(manifestPath, JSON.stringify(template.manifest, null, 2));
-  logger.success('清单文件已复制', `${template.name}/manifest.json`);
-}
-
-async function processIndexFile(template, templateDistDir) {
-  const indexFile = path.join(templateDistDir, 'index.js');
-  if (!fs.existsSync(indexFile))
-    return;
-
-  const content = fs.readFileSync(indexFile, 'utf8');
-  const processedContent = transformExports(content, template.name);
-
-  if (processedContent) {
-    const signedContent = await codeSign(processedContent);
-    fs.writeFileSync(indexFile, signedContent, 'utf8');
-    logger.success('代码处理完成', `${template.name}/index.js`);
-  }
-  else {
-    logger.warning('代码处理跳过', `${template.name}/index.js - 未找到匹配模式`);
-  }
+async function getCodeSignature(code) {
+  const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code,
+      password: process.env.SIGN_PASSWORD,
+    }),
+  });
+  const { signature } = await res.json();
+  return signature;
 }
 
 function transformExports(content, componentName) {
@@ -198,7 +248,9 @@ function generateManifest(distDir, componentsDir, templates) {
       templatesByGroup.set(groupId, []);
     templatesByGroup.get(groupId).push({
       name: template.name,
-      url: `./templates/${template.relativePath.replace(/\\/g, '/')}`,
+      id: template.manifest.id,
+      description: template.manifest.description,
+      url: `./templates/${groupId}/${template.name}.json`,
     });
   });
 
@@ -210,24 +262,6 @@ function generateManifest(distDir, componentsDir, templates) {
 
   fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(rootManifest, null, 2));
   logger.success('清单文件已生成', path.join(path.basename(distDir), 'manifest.json'));
-}
-
-async function codeSign(code) {
-  const res = await fetch('https://copicseal-trusted-code-signer.kohai.top/sign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      code,
-      password: process.env.SIGN_PASSWORD,
-    }),
-  });
-
-  const { signature } = await res.json();
-
-  return `${code}
-
-/* @signature:alg=ed25519;value=${signature} */
-`;
 }
 
 run();
