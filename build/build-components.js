@@ -116,10 +116,12 @@ async function buildTemplate(template, componentsDir, distDir) {
   spinner.start();
 
   try {
-    buildComponent(template);
-
     const templateDistDir = path.join(distDir, 'templates', template.groupId);
     fs.mkdirSync(templateDistDir, { recursive: true });
+
+    cleanupTemplateOutput(templateDistDir, template.name);
+
+    buildComponent(template);
 
     const builtTemplatePath = path.join(distDir, 'templates', template.groupId, template.name);
     const result = await processTemplateFilesFromBuilt(template, builtTemplatePath);
@@ -179,21 +181,20 @@ async function processTemplateFilesFromBuilt(template, builtPath) {
   return { code, style, signature };
 }
 
+function cleanupTemplateOutput(templateDistDir, templateName) {
+  const templatePath = path.join(templateDistDir, templateName);
+  if (fs.existsSync(templatePath)) {
+    fs.rmSync(templatePath, { recursive: true, force: true });
+  }
+}
+
 function cleanupAllTemplates(distDir, templates) {
   logger.section('清理临时文件');
 
   templates.forEach((template) => {
     const builtPath = path.join(distDir, 'templates', template.groupId, template.name);
     if (fs.existsSync(builtPath)) {
-      const jsFile = path.join(builtPath, 'index.js');
-      const cssFile = path.join(builtPath, 'index.css');
-      if (fs.existsSync(jsFile))
-        fs.unlinkSync(jsFile);
-      if (fs.existsSync(cssFile))
-        fs.unlinkSync(cssFile);
-      const contents = fs.readdirSync(builtPath);
-      if (contents.length === 0)
-        fs.rmdirSync(builtPath);
+      fs.rmSync(builtPath, { recursive: true, force: true });
     }
   });
 
