@@ -21,20 +21,11 @@ export class ZipTemplateParser extends TemplateParser {
   }
 
   protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-    const { entry, css, files } = info;
-    const source = await this.fetchText(this.joinUrl(info.url, entry));
-    if (css) {
-      const cssFile = await this.fetchText(this.joinUrl(info.url, css));
-      if (cssFile) {
-        info.css = cssFile;
-      }
-    }
-
+    const json = await this.fetchJSON<{ code: string; style: string }>(info.url);
     return {
-      source,
-      component: this.parseVueComp(source),
-      css: info.css,
-      files: files.map(f => this.joinUrl(info.url, f)),
+      source: json.code,
+      component: this.parseVueComp(json.code),
+      css: json.style,
     };
   }
 

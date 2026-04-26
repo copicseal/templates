@@ -30,8 +30,6 @@ export class LocalTemplateParser extends TemplateParser {
     return {
       source,
       component: source,
-      css: undefined,
-      files: [],
     };
   }
 

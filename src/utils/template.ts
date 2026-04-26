@@ -39,15 +39,14 @@ export class TemplateParser {
         if (group.templates && Array.isArray(group.templates)) {
           const templateInfos = await Promise.all(
             group.templates.map(async (template) => {
-              const templatePath = template.url;
-              const curl = `${this.joinUrl(url, templatePath)}/`;
-              const data = await this.fetchJSON<TemplateManifest>(this.joinUrl(curl, 'manifest.json'));
-              data.url = curl;
+              const templateUrl = this.joinUrl(url, template.url);
+              const data = await this.fetchJSON<TemplateManifest>(templateUrl);
+              data.url = templateUrl;
               const valid = ref<boolean>();
               data.valid = valid;
               (async () => {
-                const source = await this.fetchText(this.joinUrl(data.url, data.entry));
-                valid.value = await this.verifyTemplateSource(source);
+                const json = await this.fetchJSON<{ code: string; signature: string }>(templateUrl);
+                valid.value = await this.verifyTemplateSource(json.code);
               })();
               return data;
             }),
@@ -63,13 +62,11 @@ export class TemplateParser {
   }
 
   protected async loadTemplateSource(info: TemplateManifest): Promise<TemplateSource> {
-    const { entry, css, files } = info;
-    const source = await this.fetchText(this.joinUrl(info.url, entry));
+    const json = await this.fetchJSON<{ code: string; style: string }>(info.url);
     return {
-      source,
-      component: this.parseVueComp(source),
-      css: css ? this.joinUrl(info.url, css) : undefined,
-      files: files.map(f => this.joinUrl(info.url, f)),
+      source: json.code,
+      component: this.parseVueComp(json.code),
+      css: json.style,
     };
   }
 
@@ -131,9 +128,6 @@ export type TemplateManifest = {
   name: string
   version: string
   description?: string
-  entry: string
-  css?: string
-  files: string[]
   author?: string
   license?: string
   valid?: boolean | Ref<boolean | undefined>
@@ -143,5 +137,4 @@ export type TemplateSource = {
   source: string
   component: ComponentOptions
   css?: string
-  files: string[]
 };
